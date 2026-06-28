@@ -1,0 +1,20 @@
+# Core pipeline
+google-genai>=0.8.0               # Gemini API (new SDK, replaces google-generativeai)
+edge-tts>=6.1.9                  # Microsoft TTS
+requests>=2.31.0                 # HTTP — Pexels + GitHub API
+pytrends>=4.9.2                  # Google Trends
+feedparser>=6.0.11               # RSS feed parsing
+moviepy==1.0.3                   # Video assembly
+openai-whisper>=20231117         # Caption transcription
+
+# YouTube upload
+google-api-python-client>=2.120.0
+google-auth-oauthlib>=1.2.0
+google-auth-httplib2>=0.2.0
+
+# Dashboard
+streamlit>=1.35.0
+
+# Utilities
+python-dotenv>=1.0.0             # Local .env loading
+tenacity>=8.2.0                  # Retry logic

@@ -1,0 +1,2 @@
+# placeholder — keeps the data/ directory tracked by git
+# data/ventures.db is git-ignored (see .gitignore)
