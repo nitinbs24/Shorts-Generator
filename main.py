@@ -27,7 +27,7 @@ import argparse
 import logging
 import os
 import sys
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 # ── Logging setup ─────────────────────────────────────────────────────────────
@@ -53,7 +53,7 @@ def _load_env() -> None:
 
 
 def _get_run_id() -> str:
-    return datetime.utcnow().strftime("%Y%m%d_%H%M%S")
+    return datetime.now(timezone.utc).strftime("%Y%m%d_%H%M%S")
 
 
 def _tmp_path(filename: str) -> str:

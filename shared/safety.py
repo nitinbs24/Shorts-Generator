@@ -82,7 +82,7 @@ def is_safe(script: str) -> bool:
 
     try:
         response = client.models.generate_content(
-            model="gemini-1.5-pro",
+            model="gemini-2.5-flash",
             contents=SAFETY_PROMPT.format(script=script),
             config=types.GenerateContentConfig(temperature=0.1, max_output_tokens=200),
         )

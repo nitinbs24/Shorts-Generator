@@ -106,6 +106,9 @@ def fetch_topic() -> str:
             break
         except Exception as exc:
             logger.warning(f"pytrends attempt {attempt}/{PYTRENDS_MAX_RETRIES} failed: {exc}")
+            if "404" in str(exc) or "400" in str(exc):
+                logger.info("pytrends endpoint appears broken (404/400). Skipping retries.")
+                break
             if attempt < PYTRENDS_MAX_RETRIES:
                 logger.info(f"Waiting {PYTRENDS_RETRY_WAIT}s before retry...")
                 time.sleep(PYTRENDS_RETRY_WAIT)

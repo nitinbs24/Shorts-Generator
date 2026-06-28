@@ -65,7 +65,7 @@ def _generate(prompt: str) -> str:
     """Send a prompt to Gemini and return the response text."""
     client = _get_client()
     response = client.models.generate_content(
-        model="gemini-1.5-pro",
+        model="gemini-2.5-flash",
         contents=prompt,
         config=types.GenerateContentConfig(
             temperature=GEMINI_TEMPERATURE,
