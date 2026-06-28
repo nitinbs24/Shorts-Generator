@@ -1,5 +1,6 @@
 /.agents
 /docs
+/graphify-out
 
 # ── Database ──────────────────────────────────────────────────────────────────
 /data/ventures.db
