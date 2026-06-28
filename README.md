@@ -1,4 +1,4 @@
-# 📱 YouTube Shorts Automation Ventures
+# 📱 Youtube Shorts Generator
 
 > Dual-channel automated YouTube Shorts at zero recurring cost.
 
@@ -188,43 +188,6 @@ Shorts-Generator/
 
 ---
 
-## Database Schema
-
-Three SQLite tables track all activity:
-
-**`uploads`** — every video upload attempt
-```
-id · channel · mode (auto|veo) · title · topic · youtube_id · status · created_at
-```
-
-**`veo_queue`** — daily Veo scripts and prompts for the manual workflow
-```
-id · channel · topic · script · veo_prompt · status (pending|downloaded|uploaded) · created_at
-```
-
-**`topics_used`** — deduplication tracking (30-day rolling window)
-```
-id · channel · topic · used_at
-```
-
----
-
-## API Keys Required
-
-| Secret | Service | Where to get it |
-|---|---|---|
-| `GEMINI_API_KEY` | Google Gemini | [aistudio.google.com](https://aistudio.google.com) → Get API Key |
-| `PEXELS_API_KEY` | Pexels | [pexels.com/api](https://pexels.com/api) → Free signup |
-| `YOUTUBE_CLIENT_ID` | YouTube Data API | [console.cloud.google.com](https://console.cloud.google.com) → OAuth 2.0 |
-| `YOUTUBE_CLIENT_SECRET` | YouTube Data API | Same OAuth client |
-| `YOUTUBE_REFRESH_TOKEN_A` | YouTube — Channel A | Run `python oauth_setup.py --channel a` |
-| `YOUTUBE_REFRESH_TOKEN_B` | YouTube — Channel B | Run `python oauth_setup.py --channel b` |
-| `GITHUB_PAT` | GitHub API | GitHub → Settings → Developer settings → PAT (workflow scope) |
-
-> **Security:** All keys are stored as GitHub Secrets and Streamlit Cloud secrets. They are never hardcoded, logged, or committed to the repository.
-
----
-
 ## Quick Start
 
 ```bash
@@ -252,18 +215,6 @@ streamlit run dashboard/app.py
 
 ---
 
-## Resource Budgets
-
-| Resource | Budget | Usage | Buffer |
-|---|---|---|---|
-| **GitHub Actions** | 2,000 min/month | ~1,800 min/month | ~200 min (10%) |
-| **Gemini API** | 1,500 req/day (free) | ~8 req/day | Well within |
-| **Pexels API** | 200 req/hour | ~1 req/run | Well within |
-| **YouTube upload quota** | 10,000 units/day | ~9,600 units/day | ~400 units |
-| **Infrastructure cost** | — | — | **£0/month** |
-
----
-
 ## Success Metrics
 
 | Metric | Month 1 Target | Month 3 Target |
@@ -275,30 +226,6 @@ streamlit run dashboard/app.py
 | Channel B subscribers | Baseline | > 1,000 |
 | Content safety violations (Ch. B) | 0 | 0 |
 | Monthly cost | £0 | £0 |
-
----
-
-## Roadmap
-
-| Phase | Scope | Timeline |
-|---|---|---|
-| **Phase 1 — MVP Pipeline** | Core pipeline: topic engine, script gen, TTS, database | Week 1 |
-| **Phase 2 — Video & Upload** | Footage, video assembly, captions, YouTube upload | Week 2 |
-| **Phase 3 — Scheduling** | GitHub Actions cron workflows for both channels | Week 2 |
-| **Phase 4 — Dashboard** | Streamlit dashboard + Veo assistant workflow | Week 3 |
-| **Phase 5 — Polish** | Tests, safety hardening, retry robustness, blacklist | Week 4 |
-| **Phase 6 — Analytics** | YouTube Analytics API, view count tracking | Month 2 |
-| **Phase 7 — Monetisation** | AdSense setup, revenue tracking | Month 3+ |
-
-See [docs/Implementation Plan.md](docs/Implementation%20Plan.md) for the full phase-by-phase checklist.
-
----
-
-## Compliance
-
-- **COPPA compliant** — Channel B never collects personal data. All content is validated by Gemini for age-appropriateness before production.
-- **YouTube ToS compliant** — Content uses licensed stock footage (Pexels), royalty-free music, and AI-generated scripts. `#Shorts` in title and description. Video is 9:16 portrait and under 60 seconds.
-- **No secrets in code** — All API keys live in GitHub Secrets and Streamlit Cloud secrets configuration.
 
 ---
 
