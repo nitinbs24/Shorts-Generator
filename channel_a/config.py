@@ -29,6 +29,5 @@ GEMINI_MAX_TOKENS   = 500        # auto script (300) + Veo prompt (200)
 
 # ── Topic fetching ────────────────────────────────────────────────────────────
 PYTRENDS_GEO        = "IN"       # India — large English-trending market
-PYTRENDS_LANGUAGE   = "en-US"
 TOPIC_MAX_LENGTH    = 60         # characters
 TOPIC_DEDUP_DAYS    = 30         # rolling deduplication window

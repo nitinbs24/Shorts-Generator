@@ -9,14 +9,11 @@ Applies 30-day deduplication and blacklist filtering before returning a topic.
 
 import logging
 import re
-import time
 
 import feedparser
-from pytrends.request import TrendReq
 
 from channel_a.config import (
     PYTRENDS_GEO,
-    PYTRENDS_LANGUAGE,
     TOPIC_DEDUP_DAYS,
     TOPIC_MAX_LENGTH,
 )
@@ -30,24 +27,20 @@ RSS_FEEDS = [
     "http://feeds.bbci.co.uk/news/technology/rss.xml", # BBC Technology (bonus)
 ]
 
-PYTRENDS_MAX_RETRIES = 3
-PYTRENDS_RETRY_WAIT  = 60   # seconds — pytrends rate limit cooldown
-
-
-def _clean_topic(raw: str) -> str:
-    """Normalise a raw topic string: strip special chars, trim to max length."""
-    cleaned = re.sub(r"[^\w\s\-]", "", raw)
-    cleaned = re.sub(r"\s+", " ", cleaned).strip()
-    return cleaned[:TOPIC_MAX_LENGTH]
-
-
-def _fetch_from_pytrends() -> list[str]:
-    """Fetch daily trending search topics from Google Trends for the configured region."""
-    logger.info(f"Fetching trending topics from pytrends (geo={PYTRENDS_GEO})...")
-    pytrends = TrendReq(hl=PYTRENDS_LANGUAGE, tz=330)   # tz=330 = IST (UTC+5:30)
-    df = pytrends.trending_searches(pn="india")
-    topics = [_clean_topic(t) for t in df[0].tolist() if t]
-    logger.info(f"pytrends returned {len(topics)} topics")
+def _fetch_from_google_trends() -> list[str]:
+    """Fetch daily trending search topics from the official Google Trends RSS feed."""
+    logger.info(f"Fetching trending topics from Google Trends RSS (geo={PYTRENDS_GEO})...")
+    topics: list[str] = []
+    try:
+        url = f"https://trends.google.com/trending/rss?geo={PYTRENDS_GEO}"
+        feed = feedparser.parse(url)
+        for entry in feed.entries:
+            topic = _clean_topic(entry.get("title", ""))
+            if topic:
+                topics.append(topic)
+        logger.info(f"Google Trends RSS returned {len(topics)} topics")
+    except Exception as exc:
+        logger.warning(f"Google Trends RSS failed: {exc}")
     return topics
 
 
@@ -87,35 +80,14 @@ def _is_valid_topic(topic: str, channel: str = "A") -> bool:
 def fetch_topic() -> str:
     """
     Fetch a valid, deduplicated trending topic for Channel A.
-
-    Tries pytrends first (with retries on rate-limit), then falls back to RSS.
-    Applies deduplication and blacklist filtering before returning.
-
-    Returns:
-        A clean topic string (max 60 characters).
-
-    Raises:
-        RuntimeError: If no valid topic can be found from any source.
     """
-    candidates: list[str] = []
 
-    # ── Attempt pytrends ──────────────────────────────────────────────────────
-    for attempt in range(1, PYTRENDS_MAX_RETRIES + 1):
-        try:
-            candidates = _fetch_from_pytrends()
-            break
-        except Exception as exc:
-            logger.warning(f"pytrends attempt {attempt}/{PYTRENDS_MAX_RETRIES} failed: {exc}")
-            if "404" in str(exc) or "400" in str(exc):
-                logger.info("pytrends endpoint appears broken (404/400). Skipping retries.")
-                break
-            if attempt < PYTRENDS_MAX_RETRIES:
-                logger.info(f"Waiting {PYTRENDS_RETRY_WAIT}s before retry...")
-                time.sleep(PYTRENDS_RETRY_WAIT)
+    # ── Attempt Google Trends RSS ─────────────────────────────────────────────
+    candidates = _fetch_from_google_trends()
 
-    # ── Fallback to RSS ───────────────────────────────────────────────────────
+    # ── Fallback to BBC/Reddit RSS ────────────────────────────────────────────
     if not candidates:
-        logger.info("pytrends failed — falling back to RSS feeds")
+        logger.info("Google Trends failed — falling back to secondary RSS feeds")
         candidates = _fetch_from_rss()
 
     # ── Filter and return first valid topic ───────────────────────────────────
