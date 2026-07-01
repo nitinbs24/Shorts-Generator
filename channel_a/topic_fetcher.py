@@ -1,7 +1,7 @@
 """
 channel_a/topic_fetcher.py — Trending topic engine for Channel A (TrendByte Shorts).
 
-Primary source:  pytrends — Google Trends daily trending searches (region=IN)
+Primary source:  Google Trends RSS (daily trending, region=IN)
 Fallback source: feedparser — BBC Top Stories + Reddit r/worldnews RSS feeds
 
 Applies 30-day deduplication and blacklist filtering before returning a topic.
@@ -26,6 +26,38 @@ RSS_FEEDS = [
     "https://www.reddit.com/r/worldnews/.rss",         # Reddit r/worldnews
     "http://feeds.bbci.co.uk/news/technology/rss.xml", # BBC Technology (bonus)
 ]
+
+
+def _clean_topic(raw: str) -> str:
+    """
+    Sanitise a raw headline into a clean topic string.
+
+    - Strips HTML tags and common entities
+    - Removes leading/trailing whitespace
+    - Collapses internal whitespace
+    - Truncates to TOPIC_MAX_LENGTH characters
+    - Returns empty string if result is too short (< 4 chars)
+    """
+    if not raw:
+        return ""
+    # Remove HTML tags
+    text = re.sub(r"<[^>]+>", "", raw)
+    # Decode common HTML entities
+    text = (
+        text.replace("&amp;", "&")
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .replace("&quot;", '"')
+            .replace("&#39;", "'")
+            .replace("&nbsp;", " ")
+    )
+    # Collapse whitespace
+    text = re.sub(r"\s+", " ", text).strip()
+    # Truncate to max length at word boundary
+    if len(text) > TOPIC_MAX_LENGTH:
+        text = text[:TOPIC_MAX_LENGTH].rsplit(" ", 1)[0]
+    return text if len(text) >= 4 else ""
+
 
 def _fetch_from_google_trends() -> list[str]:
     """Fetch daily trending search topics from the official Google Trends RSS feed."""
