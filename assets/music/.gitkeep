@@ -1,0 +1,13 @@
+# Add royalty-free MP3 files here for background music.
+# The video_builder will randomly pick one per video.
+#
+# Recommended sources for royalty-free music:
+#   - YouTube Audio Library: https://studio.youtube.com/channel/music
+#   - Free Music Archive: https://freemusicarchive.org
+#   - Pixabay Music: https://pixabay.com/music/
+#
+# Naming convention:  <mood>_<bpm>bpm_<title>.mp3
+# Examples:
+#   upbeat_120bpm_energetic_pop.mp3
+#   calm_90bpm_soft_piano.mp3
+#   kids_100bpm_playful_tune.mp3    (Channel B)

@@ -17,10 +17,10 @@ Pipeline steps:
     5.  Store Veo entry in database
     6.  Mark topic as used
     -- dry-run stops here --
-    7.  Fetch stock footage (Pexels)          [Phase 2]
-    8.  Assemble video (MoviePy + FFmpeg)     [Phase 2]
-    9.  Generate & burn captions (Whisper)    [Phase 2]
-    10. Upload to YouTube                     [Phase 2]
+    7.  Fetch stock footage (Pexels)
+    8.  Assemble video (MoviePy + FFmpeg)
+    9.  Generate & burn captions (Whisper)
+    10. Upload to YouTube
 """
 
 import argparse
@@ -69,7 +69,7 @@ def _fetch_topic(channel: str) -> str:
         from channel_a.topic_fetcher import fetch_topic
         return fetch_topic()
     else:
-        from channel_b.config import fetch_topic
+        from channel_b.config import fetch_topic  # type: ignore[attr-defined]
         return fetch_topic()
 
 
@@ -121,23 +121,23 @@ def run_pipeline(channel: str, dry_run: bool = False) -> None:
     logger.info("=" * 60)
 
     # ── Step 1: Initialise database ───────────────────────────────────────────
-    logger.info("Step 1/6 — Initialising database...")
+    logger.info("Step 1/10 — Initialising database...")
     init_db()
 
     # ── Step 2: Fetch topic ───────────────────────────────────────────────────
-    logger.info("Step 2/6 — Fetching topic...")
+    logger.info("Step 2/10 — Fetching topic...")
     topic = _fetch_topic(channel)
     logger.info(f"          Topic: '{topic}'")
 
     # ── Step 3: Generate scripts ──────────────────────────────────────────────
-    logger.info("Step 3/6 — Generating scripts via Gemini...")
+    logger.info("Step 3/10 — Generating scripts via Gemini...")
     auto_script, veo_prompt = _generate_scripts(channel, topic)
     logger.info(f"          Auto script: {len(auto_script)} chars")
     logger.info(f"          Veo prompt:  {len(veo_prompt)} chars")
 
     # ── Step 4: Content safety check (Channel B only) ─────────────────────────
     if channel == "b":
-        logger.info("Step 4/6 — Running content safety check (Channel B)...")
+        logger.info("Step 4/10 — Running content safety check (Channel B)...")
         from shared.safety import is_safe
         from channel_b.script_gen import generate_auto_script_strict
 
@@ -154,22 +154,22 @@ def run_pipeline(channel: str, dry_run: bool = False) -> None:
                 logger.info("          Regenerating with stricter prompt...")
                 auto_script = generate_auto_script_strict(topic)
     else:
-        logger.info("Step 4/6 — Safety check: skipped (Channel A)")
+        logger.info("Step 4/10 — Safety check: skipped (Channel A)")
 
     # ── Step 5: Generate TTS voiceover ────────────────────────────────────────
-    logger.info("Step 5/6 — Generating TTS voiceover...")
-    voiceover_path = _tmp_path(f"voiceover_{run_id}.mp3")
+    logger.info("Step 5/10 — Generating TTS voiceover...")
+    voiceover_path = Path(_tmp_path(f"voiceover_{run_id}.mp3"))
     generate_voiceover(
         text=auto_script,
         voice=cfg.TTS_VOICE,
-        output_path=voiceover_path,
+        output_path=str(voiceover_path),
         rate=cfg.TTS_RATE,
         pitch=cfg.TTS_PITCH,
     )
     logger.info(f"          Voiceover: {voiceover_path}")
 
     # ── Step 6: Store Veo entry + mark topic used ─────────────────────────────
-    logger.info("Step 6/6 — Storing Veo entry and marking topic used...")
+    logger.info("Step 6/10 — Storing Veo entry and marking topic used...")
     veo_id = store_veo_entry(channel_label, topic, auto_script, veo_prompt)
     mark_topic_used(channel_label, topic)
     logger.info(f"          Veo entry ID: {veo_id}")
@@ -178,64 +178,62 @@ def run_pipeline(channel: str, dry_run: bool = False) -> None:
     # ── Dry-run exit ──────────────────────────────────────────────────────────
     if dry_run:
         logger.info("")
-        logger.info("DRY RUN COMPLETE — Phase 1 outputs:")
+        logger.info("DRY RUN COMPLETE — pipeline outputs:")
         logger.info(f"  Script preview : {auto_script[:120].replace(chr(10), ' ')}...")
         logger.info(f"  Voiceover file : {voiceover_path}")
         logger.info(f"  Veo prompt     : {veo_prompt[:80].replace(chr(10), ' ')}...")
         logger.info("")
-        logger.info("Phase 2 modules (footage, video, captions, upload) will run on next phase.")
         return
 
-    # ══════════════════════════════════════════════════════════════════════════
-    # PHASE 2 STEPS — implemented in Phase 2 of the project
-    # ══════════════════════════════════════════════════════════════════════════
-
     # ── Step 7: Fetch stock footage ───────────────────────────────────────────
-    logger.info("Step 7 — Fetching stock footage from Pexels...")
+    logger.info("Step 7/10 — Fetching stock footage from Pexels...")
     from shared.footage import fetch_clips
     clips = fetch_clips(topic, count=3)
-    logger.info(f"         Downloaded {len(clips)} clips")
+    logger.info(f"           Downloaded {len(clips)} clips")
 
     # ── Step 8: Assemble video ────────────────────────────────────────────────
-    logger.info("Step 8 — Assembling video...")
+    logger.info("Step 8/10 — Assembling video (MoviePy + FFmpeg)...")
     from shared.video_builder import build_video
-    no_subs_path = _tmp_path(f"no_subs_{run_id}.mp4")
+    no_subs_path = Path(_tmp_path(f"no_subs_{run_id}.mp4"))
     build_video(
         clip_paths=clips,
         voiceover_path=voiceover_path,
         output_path=no_subs_path,
     )
-    logger.info(f"         Assembled video: {no_subs_path}")
+    logger.info(f"           Assembled (no captions): {no_subs_path.name}")
 
     # ── Step 9: Generate captions + burn ─────────────────────────────────────
-    logger.info("Step 9 — Transcribing and burning captions...")
-    from shared.captions import add_captions
-    final_path = _tmp_path(f"final_{run_id}.mp4")
-    add_captions(
-        voiceover_path=voiceover_path,
+    logger.info("Step 9/10 — Transcribing and burning captions (Whisper)...")
+    from shared.captions import generate_captions, burn_captions
+    srt_path   = Path(_tmp_path(f"captions_{run_id}.srt"))
+    final_path = Path(_tmp_path(f"final_{run_id}.mp4"))
+    generate_captions(voiceover_path=voiceover_path, output_srt=srt_path)
+    burn_captions(
         video_path=no_subs_path,
+        srt_path=srt_path,
         output_path=final_path,
     )
-    logger.info(f"         Final video: {final_path}")
+    logger.info(f"           Final video with captions: {final_path.name}")
 
     # ── Step 10: Upload to YouTube ────────────────────────────────────────────
-    logger.info("Step 10 — Uploading to YouTube...")
+    logger.info("Step 10/10 — Uploading to YouTube...")
     title       = cfg.TITLE_FORMAT.format(topic=topic)
     description = cfg.DESCRIPTION_TEMPLATE.format(topic=topic)
     upload_id   = log_upload(channel_label, "auto", title, topic)
 
     try:
-        from shared.uploader import upload_video
-        youtube_id = upload_video(
+        from shared.uploader import upload_short
+        youtube_id = upload_short(
             video_path=final_path,
             title=title,
             description=description,
-            category_id=cfg.YOUTUBE_CATEGORY_ID,
-            channel=channel,
+            category_id=int(cfg.YOUTUBE_CATEGORY_ID),
+            channel_label=channel,
         )
         update_upload_status(upload_id, "success", youtube_id=youtube_id)
         logger.info("=" * 60)
         logger.info(f"UPLOAD SUCCESS — YouTube ID: {youtube_id}")
+        logger.info(f"URL: https://youtu.be/{youtube_id}")
         logger.info(f"Title: {title}")
         logger.info("=" * 60)
 
