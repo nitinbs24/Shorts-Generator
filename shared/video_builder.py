@@ -38,6 +38,10 @@ logger = logging.getLogger(__name__)
 def _import_moviepy():
     """Import moviepy components lazily to avoid startup errors if FFmpeg is absent."""
     try:
+        import PIL.Image
+        if not hasattr(PIL.Image, 'ANTIALIAS'):
+            PIL.Image.ANTIALIAS = getattr(PIL.Image, 'LANCZOS', 1)
+            
         from moviepy.editor import (  # type: ignore
             AudioFileClip,
             ColorClip,

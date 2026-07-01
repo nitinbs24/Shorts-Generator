@@ -229,6 +229,7 @@ def run_pipeline(channel: str, dry_run: bool = False) -> None:
             description=description,
             category_id=int(cfg.YOUTUBE_CATEGORY_ID),
             channel_label=channel,
+            privacy="private",
         )
         update_upload_status(upload_id, "success", youtube_id=youtube_id)
         logger.info("=" * 60)

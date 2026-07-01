@@ -96,8 +96,11 @@ def run_oauth_flow(channel: str) -> str:
     print("[oauth_setup] A browser window will open for Google authentication.\n")
 
     flow = InstalledAppFlow.from_client_config(client_config, scopes)
-    # port=0 picks a random free port; open_browser=True opens the default browser
-    credentials = flow.run_local_server(port=0, open_browser=True)
+    credentials = flow.run_local_server(
+        port=0, 
+        open_browser=True, 
+        prompt="select_account consent"
+    )
 
     refresh_token = credentials.refresh_token
     if not refresh_token:
