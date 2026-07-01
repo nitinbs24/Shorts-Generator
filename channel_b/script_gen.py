@@ -61,23 +61,44 @@ def _get_client() -> genai.Client:
     return genai.Client(api_key=api_key)
 
 
+# Model preference list — first available / non-overloaded is used
+_MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite", "gemini-flash-latest"]
+
+# Error substrings that trigger a model fallback
+_FALLBACK_TRIGGERS = ("503", "UNAVAILABLE", "429", "RESOURCE_EXHAUSTED")
+
+
 def _generate(prompt: str) -> str:
-    """Send a prompt to Gemini and return the response text."""
+    """Send a prompt to Gemini and return the response text.
+    Tries models in order, falling back on 503 overload or 429 quota exhaustion.
+    """
     client = _get_client()
-    response = client.models.generate_content(
-        model="gemini-2.5-flash",
-        contents=prompt,
-        config=types.GenerateContentConfig(
-            temperature=GEMINI_TEMPERATURE,
-            max_output_tokens=GEMINI_MAX_TOKENS,
-        ),
-    )
-    return response.text.strip()
+    last_exc = None
+    for model in _MODELS:
+        try:
+            response = client.models.generate_content(
+                model=model,
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    temperature=GEMINI_TEMPERATURE,
+                    max_output_tokens=GEMINI_MAX_TOKENS,
+                ),
+            )
+            return response.text.strip()
+        except Exception as exc:
+            err_str = str(exc)
+            if any(t in err_str for t in _FALLBACK_TRIGGERS):
+                logger.warning("Model '%s' unavailable (%s), trying next...", model,
+                               "503" if "503" in err_str else "429")
+                last_exc = exc
+                continue
+            raise
+    raise last_exc
 
 
 # ── Script generators ─────────────────────────────────────────────────────────
 
-@with_retry(attempts=3, min_wait=2, max_wait=8)
+@with_retry(attempts=5, min_wait=4, max_wait=30)
 def generate_auto_script(topic: str) -> str:
     """
     Generate a children's rhyming song script for Channel B.
@@ -94,7 +115,7 @@ def generate_auto_script(topic: str) -> str:
     return script
 
 
-@with_retry(attempts=3, min_wait=2, max_wait=8)
+@with_retry(attempts=5, min_wait=4, max_wait=30)
 def generate_auto_script_strict(topic: str) -> str:
     """
     Stricter fallback script generator — used when the standard script fails safety check.
@@ -113,7 +134,7 @@ def generate_auto_script_strict(topic: str) -> str:
     return script
 
 
-@with_retry(attempts=3, min_wait=2, max_wait=8)
+@with_retry(attempts=5, min_wait=4, max_wait=30)
 def generate_veo_prompt(topic: str) -> str:
     """
     Generate a child-safe Veo video prompt for Channel B's manual Veo workflow.
