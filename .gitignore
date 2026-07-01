@@ -30,6 +30,13 @@ build/
 .coverage
 htmlcov/
 
+# ── Temp pipeline outputs ─────────────────────────────────────────────────────
+/tmp/
+
+# ── OAuth tokens (NEVER commit) ───────────────────────────────────────────────
+tokens/
+*.json.bak
+
 # ── OS files ──────────────────────────────────────────────────────────────────
 .DS_Store
 Thumbs.db
