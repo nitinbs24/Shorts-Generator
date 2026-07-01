@@ -39,5 +39,20 @@ jobs:
       - name: Install Python dependencies
         run: pip install -r requirements.txt
 
+      - name: Verify secrets are present
+        run: |
+          missing=""
+          [ -z "$GEMINI_API_KEY" ]          && missing="$missing GEMINI_API_KEY"
+          [ -z "$PEXELS_API_KEY" ]          && missing="$missing PEXELS_API_KEY"
+          [ -z "$YOUTUBE_CLIENT_ID" ]        && missing="$missing YOUTUBE_CLIENT_ID"
+          [ -z "$YOUTUBE_CLIENT_SECRET" ]    && missing="$missing YOUTUBE_CLIENT_SECRET"
+          [ -z "$YOUTUBE_REFRESH_TOKEN_B" ]  && missing="$missing YOUTUBE_REFRESH_TOKEN_B"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing GitHub Secrets:$missing"
+            echo "Go to: Settings → Secrets and variables → Actions → New repository secret"
+            exit 1
+          fi
+          echo "✅ All secrets are present."
+
       - name: Run Channel B pipeline
         run: python main.py --channel b
